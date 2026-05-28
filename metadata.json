@@ -1,0 +1,6 @@
+{
+  "name": "MediaFire Downloader",
+  "description": "An automated MediaFire link resolver and direct downloader with a modern, high-speed 3D-styled theme.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
