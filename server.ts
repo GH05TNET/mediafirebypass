@@ -1,6 +1,5 @@
 import express from "express";
 import path from "path";
-import { createServer as createViteServer } from "vite";
 
 function formatBytes(bytes: number, decimals = 1): string {
   if (bytes <= 0) return "Unknown Size";
@@ -11,13 +10,12 @@ function formatBytes(bytes: number, decimals = 1): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
 }
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+export const app = express();
+const PORT = 3000;
 
-  // Body parser limit increase for potential large data payloads
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+// Body parser limit increase for potential large data payloads
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
   // API Route - Resolve MediaFire Link
   app.post("/api/resolve", async (req, res) => {
@@ -323,24 +321,28 @@ async function startServer() {
     });
   });
 
-  // Vite development middleware vs production bundle
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
+  // Vite development middleware vs production bundle and local runner boot
+  async function bootstrap() {
+    if (!process.env.VERCEL) {
+      if (process.env.NODE_ENV !== "production") {
+        const { createServer: createViteServer } = await import("vite");
+        const vite = await createViteServer({
+          server: { middlewareMode: true },
+          appType: "spa",
+        });
+        app.use(vite.middlewares);
+      } else {
+        const distPath = path.join(process.cwd(), "dist");
+        app.use(express.static(distPath));
+        app.get("*", (req, res) => {
+          res.sendFile(path.join(distPath, "index.html"));
+        });
+      }
+
+      app.listen(PORT, "0.0.0.0", () => {
+        console.log(`MediaFire Downloader full-stack server running on http://0.0.0.0:${PORT}`);
+      });
+    }
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`MediaFire Downloader full-stack server running on http://0.0.0.0:${PORT}`);
-  });
-}
-
-startServer();
+  bootstrap();
